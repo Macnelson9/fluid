@@ -3,11 +3,7 @@ import { Request, Response } from "express";
 import { Config } from "../config";
 import { transactionStore } from "../workers/transactionStore";
 
-interface FeeBumpRequest {
-  xdr: string;
-  submit?: boolean;
-  token?: string;
-}
+import { FeeBumpSchema, FeeBumpRequest } from "../schemas/feeBump";
 
 interface FeeBumpResponse {
   xdr: string;
@@ -21,12 +17,18 @@ export function feeBumpHandler(
   config: Config,
 ): void {
   try {
-    const body: FeeBumpRequest = req.body;
+    const result = FeeBumpSchema.safeParse(req.body);
 
-    if (!body.xdr) {
-      res.status(400).json({ error: "Missing 'xdr' field in request body" });
+    if (!result.success) {
+      console.warn("Validation failed for fee-bump request:", result.error.format());
+      res.status(400).json({
+        error: "Validation failed",
+        details: result.error.format(),
+      });
       return;
     }
+
+    const body: FeeBumpRequest = result.data;
 
     console.log("Received fee-bump request");
 
