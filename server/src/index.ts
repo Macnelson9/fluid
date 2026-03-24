@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
 import cors from "cors";
 import { feeBumpHandler } from "./handlers/feeBump";
 import { loadConfig } from "./config";
@@ -11,6 +12,13 @@ app.use(express.json());
 
 const config = loadConfig();
 
+// Configure rate limiter
+const limiter = rateLimit({
+  windowMs: config.rateLimitWindowMs,
+  max: config.rateLimitMax,
+  message: { error: "Too many requests from this IP, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
 // CORS configuration with origin validation
 const corsOptions = {
   origin: (
@@ -50,7 +58,7 @@ app.get("/health", (req: Request, res: Response) => {
   res.json({ status: "ok" });
 });
 
-app.post("/fee-bump", (req: Request, res: Response) => {
+app.post("/fee-bump", limiter, (req: Request, res: Response) => {
   feeBumpHandler(req, res, config);
 });
 
