@@ -31,7 +31,7 @@ const limiter = rateLimit({
 const corsOptions = {
   origin: (
     origin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void,
+    callback: (err: Error | null, allow?: boolean) => void
   ) => {
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) {

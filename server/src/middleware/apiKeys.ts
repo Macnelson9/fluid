@@ -3,10 +3,12 @@ import { AppError } from "../errors/AppError";
 
 export interface ApiKeyConfig {
   key: string;
+  tenantId: string;
   name: string;
   tier: "free" | "pro";
   maxRequests: number;
   windowMs: number;
+  dailyQuotaStroops: number;
 }
 
 const API_KEYS = new Map<string, ApiKeyConfig>([
@@ -14,20 +16,24 @@ const API_KEYS = new Map<string, ApiKeyConfig>([
     "fluid-free-demo-key",
     {
       key: "fluid-free-demo-key",
+      tenantId: "tenant-demo-free",
       name: "Demo Free dApp",
       tier: "free",
       maxRequests: 2,
       windowMs: 60_000,
+      dailyQuotaStroops: 200,
     },
   ],
   [
     "fluid-pro-demo-key",
     {
       key: "fluid-pro-demo-key",
+      tenantId: "tenant-demo-pro",
       name: "Demo Pro dApp",
       tier: "pro",
       maxRequests: 5,
       windowMs: 60_000,
+      dailyQuotaStroops: 2_000,
     },
   ],
 ]);

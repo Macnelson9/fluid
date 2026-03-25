@@ -1,5 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import StellarSdk from "@stellar/stellar-sdk";
+import { Config } from "../config";
+import { FeeBumpSchema, FeeBumpRequest } from "../schemas/feeBump";
+import { ApiKeyConfig } from "../middleware/apiKeys";
+import { syncTenantFromApiKey } from "../models/tenantStore";
+import { recordSponsoredTransaction } from "../models/transactionLedger";
+import { checkTenantDailyQuota } from "../services/quota";
 import { transactionStore } from "../workers/transactionStore";
 import { AppError } from "../errors/AppError";
 
@@ -85,6 +91,28 @@ export function feeBumpHandler(
       );
     }
 
+    const feeAmount = Math.floor(config.baseFee * config.feeMultiplier);
+    const apiKeyConfig = res.locals.apiKey as ApiKeyConfig | undefined;
+
+    if (!apiKeyConfig) {
+      res.status(500).json({
+        error: "Missing tenant context for fee sponsorship",
+      });
+      return;
+    }
+
+    const tenant = syncTenantFromApiKey(apiKeyConfig);
+    const quotaCheck = checkTenantDailyQuota(tenant, feeAmount);
+
+    if (!quotaCheck.allowed) {
+      res.status(403).json({
+        error: "Daily fee sponsorship quota exceeded",
+        currentSpendStroops: quotaCheck.currentSpendStroops,
+        attemptedFeeStroops: feeAmount,
+        dailyQuotaStroops: quotaCheck.dailyQuotaStroops,
+      });
+      return;
+    }
     // Extract operation count safely
     const operationCount = innerTransaction.operations?.length || 0;
 
@@ -112,7 +140,9 @@ export function feeBumpHandler(
       innerTransaction,
       config.networkPassphrase,
     );
-    feeBumpTx.sign(feePayerAccount.keypair);
+
+    feeBumpTx.sign(feePayerKeypair);
+    recordSponsoredTransaction(tenant.id, feeAmount);
 
     const feeBumpXdr = feeBumpTx.toXDR();
     console.log(`Fee-bump transaction created | fee_payer: ${feePayerAccount.publicKey}`);
