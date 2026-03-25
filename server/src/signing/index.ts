@@ -1,5 +1,13 @@
 import StellarSdk from "@stellar/stellar-sdk";
 import { nativeSigner } from "./native";
+export { SignerPool } from "./signerPool";
+export type {
+  PoolAccountSnapshot,
+  PooledSignerAccount,
+  SignerLease,
+  SignerPoolOptions,
+  SignerSelectionStrategy,
+} from "./signerPool";
 
 interface SignableTransaction {
   addDecoratedSignature(signature: unknown): void;

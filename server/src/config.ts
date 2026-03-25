@@ -1,4 +1,5 @@
 import StellarSdk from "@stellar/stellar-sdk";
+import { SignerPool } from "./signing";
 
 export type HorizonSelectionStrategy = "priority" | "round_robin";
 
@@ -10,6 +11,7 @@ export interface FeePayerAccount {
 
 export interface Config {
   feePayerAccounts: FeePayerAccount[];
+  signerPool: SignerPool;
   baseFee: number;
   feeMultiplier: number;
   networkPassphrase: string;
@@ -51,6 +53,15 @@ export function loadConfig(): Config {
       keypair,
     };
   });
+  const signerPool = new SignerPool(
+    feePayerAccounts.map((account) => ({
+      keypair: account.keypair,
+      secret: account.secret,
+    })),
+    {
+      selectionStrategy: "least_used",
+    }
+  );
 
   const baseFee = parseInt(process.env.FLUID_BASE_FEE || "100", 10);
   const feeMultiplier = parseFloat(process.env.FLUID_FEE_MULTIPLIER || "2.0");
@@ -80,6 +91,7 @@ export function loadConfig(): Config {
 
   return {
     feePayerAccounts,
+    signerPool,
     baseFee,
     feeMultiplier,
     networkPassphrase,
@@ -95,8 +107,16 @@ export function loadConfig(): Config {
 let rrIndex = 0;
 
 export function pickFeePayerAccount(config: Config): FeePayerAccount {
-  const accounts = config.feePayerAccounts;
-  const account = accounts[rrIndex % accounts.length];
-  rrIndex = (rrIndex + 1) % accounts.length;
+  const snapshot = config.signerPool.getSnapshot();
+  const nextPublicKey = snapshot[rrIndex % snapshot.length]?.publicKey;
+  rrIndex = (rrIndex + 1) % snapshot.length;
+  const account = config.feePayerAccounts.find(
+    (candidate) => candidate.publicKey === nextPublicKey
+  );
+
+  if (!account) {
+    throw new Error("Failed to select fee payer account from signer pool");
+  }
+
   return account;
 }

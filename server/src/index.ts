@@ -72,9 +72,13 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 app.get("/health", (req: Request, res: Response) => {
-  const accounts = config.feePayerAccounts.map((account) => ({
+  const accounts = config.signerPool.getSnapshot().map((account) => ({
     publicKey: account.publicKey,
-    status: "active",
+    status: account.active ? "active" : "inactive",
+    in_flight: account.inFlight,
+    total_uses: account.totalUses,
+    sequence_number: account.sequenceNumber,
+    balance: account.balance,
   }));
 
   res.json({

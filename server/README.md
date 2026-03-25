@@ -155,6 +155,16 @@ npm run benchmark:signing
 That command builds the Rust signer, compares it against the current Node.js signing path, and writes the report to `server/benchmarks/signing-report.md`.
 The GitHub Actions benchmark workflow also writes the same report back to the feature branch after a successful run.
 
+## Signer Pool Test
+
+Run the multi-account concurrency test with:
+
+```bash
+npm run test:signer-pool
+```
+
+That command builds the native signer, exercises the `SignerPool` across five concurrent accounts plus a 200-request load burst, and prints `POOL_TEST` log lines showing five distinct accounts signing five different transactions simultaneously.
+
 ## Project Structure
 
 ```
