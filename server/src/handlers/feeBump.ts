@@ -176,7 +176,8 @@ export async function feeBumpHandler(
       server
         .submitTransaction(feeBumpTx)
         .then((result: any) => {
-          transactionStore.addTransaction(result.hash, "submitted");
+          // Track the submitted transaction
+          transactionStore.addTransaction(result.hash, tenant.id, "submitted");
 
           const response: FeeBumpResponse = {
             xdr: feeBumpXdr,

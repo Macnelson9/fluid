@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 
 import { loadConfig } from "./config";
 import { feeBumpHandler } from "./handlers/feeBump";
+import { updateWebhookHandler } from "./handlers/tenantWebhook";
 import { healthHandler } from "./handlers/health";
 
 import { apiKeyMiddleware } from "./middleware/apiKeys";
@@ -84,6 +85,9 @@ app.post(
   },
 );
 
+app.patch("/tenant/webhook", apiKeyMiddleware, updateWebhookHandler);
+
+// Test endpoint to manually add a pending transaction
 // Add transaction manually
 app.post("/test/add-transaction", (req: Request, res: Response) => {
   const { hash, status = "pending" } = req.body;
@@ -91,12 +95,8 @@ app.post("/test/add-transaction", (req: Request, res: Response) => {
   if (!hash) {
     return res.status(400).json({ error: "Transaction hash is required" });
   }
-
-  transactionStore.addTransaction(hash, status);
-
-  res.json({
-    message: `Transaction ${hash} added with status ${status}`,
-  });
+  transactionStore.addTransaction(hash, "test", status);
+  res.json({ message: `Transaction ${hash} added with status ${status}` });
 });
 
 // View all transactions
